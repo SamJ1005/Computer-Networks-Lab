@@ -1,10 +1,13 @@
 import socket
 
-client = socket.socket()
-client.connect(("localhost", 1234))
+s = socket.socket()
+s.connect(("localhost", 7000))
 
-msg = input("Enter message: ")
-client.send(msg.encode())
+while True:
+    m = input()
+    s.send(m.encode())
+    if m == "exit":
+        break
+    print(s.recv(1024).decode())
 
-print("Echo from server:", client.recv(1024).decode())
-client.close()
+s.close()

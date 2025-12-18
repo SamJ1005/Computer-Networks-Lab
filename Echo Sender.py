@@ -1,16 +1,16 @@
 import socket
 
-server = socket.socket()
-server.bind(("localhost", 1234))
-server.listen(1)
+s = socket.socket()
+s.bind(("localhost", 7000))
+s.listen(1)
 
-print("Echo Server Started...")
-conn, addr = server.accept()
+c, a = s.accept()
 
 while True:
-    data = conn.recv(1024).decode()
-    if not data:
+    m = c.recv(1024).decode()
+    if m == "exit":
         break
-    conn.send(data.encode())  # echo back
+    c.send(m.encode())
 
-conn.close()
+c.close()
+s.close()
