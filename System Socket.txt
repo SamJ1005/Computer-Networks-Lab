@@ -17,14 +17,15 @@ public class ChatServer {
             String msg;
             try {
                 while ((msg = in.readLine()) != null)
-                    System.out.println("Client: " + msg); // print only received messages
+                    System.out.println("Client: " + msg);
             } catch (IOException e) {}
         }).start();
 
         // Send loop
         String msg;
-        while ((msg = keyboard.readLine()) != null) {
-            System.out.println("Server: " + msg); // print typed message
+        while (true) {
+            System.out.print("Server: "); // prompt
+            msg = keyboard.readLine();
             out.println(msg); // send to client
         }
     }
@@ -47,15 +48,17 @@ public class ChatClient {
             String msg;
             try {
                 while ((msg = in.readLine()) != null)
-                    System.out.println("Server: " + msg); // print only received messages
+                    System.out.println("Server: " + msg);
             } catch (IOException e) {}
         }).start();
 
         // Send loop
         String msg;
-        while ((msg = keyboard.readLine()) != null) {
-            System.out.println("Client: " + msg); // print typed message
+        while (true) {
+            System.out.print("Client: "); // prompt
+            msg = keyboard.readLine();
             out.println(msg); // send to server
         }
     }
 }
+
