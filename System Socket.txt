@@ -17,24 +17,25 @@ public class ChatServer {
             String msg;
             try {
                 while ((msg = in.readLine()) != null)
-                    System.out.println("Client: " + msg); // show received messages
+                    System.out.println("Client: " + msg); // print only received messages
             } catch (IOException e) {}
         }).start();
 
-        // Send thread
+        // Send loop
         String msg;
-        while ((msg = keyboard.readLine()) != null)
-            out.println(msg); // just send, do not print locally
+        while ((msg = keyboard.readLine()) != null) {
+            System.out.println("Server: " + msg); // print typed message
+            out.println(msg); // send to client
+        }
     }
 }
-
 
 import java.io.*;
 import java.net.*;
 
 public class ChatClient {
     public static void main(String[] args) throws Exception {
-        Socket socket = new Socket("SERVER_IP", 7000);
+        Socket socket = new Socket("SERVER_IP", 7000); // replace with server IP
         System.out.println("Connected to server");
 
         BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -46,13 +47,15 @@ public class ChatClient {
             String msg;
             try {
                 while ((msg = in.readLine()) != null)
-                    System.out.println("Server: " + msg);
+                    System.out.println("Server: " + msg); // print only received messages
             } catch (IOException e) {}
         }).start();
 
-        // Send thread
+        // Send loop
         String msg;
-        while ((msg = keyboard.readLine()) != null)
-            out.println(msg); // just send
+        while ((msg = keyboard.readLine()) != null) {
+            System.out.println("Client: " + msg); // print typed message
+            out.println(msg); // send to server
+        }
     }
 }
