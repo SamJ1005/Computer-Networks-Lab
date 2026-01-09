@@ -14,7 +14,7 @@ public class ChatServer {
                 new InputStreamReader(socket.getInputStream()));
         PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 
-        // Receive thread
+        // Receive messages from client
         new Thread(() -> {
             String msg;
             try {
@@ -23,12 +23,15 @@ public class ChatServer {
             } catch (IOException e) {}
         }).start();
 
-        // Send thread
+        // Send messages to client
         BufferedReader keyboard = new BufferedReader(
                 new InputStreamReader(System.in));
+
         String msg;
-        while ((msg = keyboard.readLine()) != null)
+        while ((msg = keyboard.readLine()) != null) {
+            System.out.println("Server (You): " + msg);
             out.println(msg);
+        }
     }
 }
 
@@ -46,7 +49,7 @@ public class ChatClient {
                 new InputStreamReader(socket.getInputStream()));
         PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 
-        // Receive thread
+        // Receive messages from server
         new Thread(() -> {
             String msg;
             try {
@@ -55,11 +58,15 @@ public class ChatClient {
             } catch (IOException e) {}
         }).start();
 
-        // Send thread
+        // Send messages to server
         BufferedReader keyboard = new BufferedReader(
                 new InputStreamReader(System.in));
+
         String msg;
-        while ((msg = keyboard.readLine()) != null)
+        while ((msg = keyboard.readLine()) != null) {
+            System.out.println("Client (You): " + msg);
             out.println(msg);
+        }
     }
 }
+
