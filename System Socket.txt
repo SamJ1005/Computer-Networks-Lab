@@ -16,20 +16,24 @@ public class ChatServer {
         new Thread(() -> {
             String msg;
             try {
-                while ((msg = in.readLine()) != null)
-                    System.out.println("Client: " + msg);
+                while ((msg = in.readLine()) != null) {
+                    // Print received message on a new line
+                    System.out.println("\nClient: " + msg);
+                    System.out.print("Server: "); // restore prompt
+                }
             } catch (IOException e) {}
         }).start();
 
         // Send loop
         String msg;
         while (true) {
-            System.out.print("Server: "); // prompt
+            System.out.print("Server: ");
             msg = keyboard.readLine();
-            out.println(msg); // send to client
+            out.println(msg);
         }
     }
 }
+
 
 import java.io.*;
 import java.net.*;
@@ -47,18 +51,19 @@ public class ChatClient {
         new Thread(() -> {
             String msg;
             try {
-                while ((msg = in.readLine()) != null)
-                    System.out.println("Server: " + msg);
+                while ((msg = in.readLine()) != null) {
+                    System.out.println("\nServer: " + msg);
+                    System.out.print("Client: "); // restore prompt
+                }
             } catch (IOException e) {}
         }).start();
 
         // Send loop
         String msg;
         while (true) {
-            System.out.print("Client: "); // prompt
+            System.out.print("Client: ");
             msg = keyboard.readLine();
-            out.println(msg); // send to server
+            out.println(msg);
         }
     }
 }
-
