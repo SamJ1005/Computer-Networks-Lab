@@ -1,31 +1,28 @@
 import socket
 import threading
 import sys
-import termios
-import tty
-import select
+import msvcrt
+import time
 
 HOST = '0.0.0.0'
 PORT = 65432
 
-def get_char():
-    """Non-blocking single character input"""
-    fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
-    try:
-        tty.setraw(fd)
-        if select.select([sys.stdin], [], [], 0.1)[0]:
-            return sys.stdin.read(1)
-    finally:
-        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+def get_char_windows():
+    """Windows-compatible non-blocking input"""
+    if msvcrt.kbhit():
+        return msvcrt.getch().decode('utf-8', errors='ignore')
     return None
 
 def receive_messages(conn):
     while True:
         try:
+            conn.settimeout(0.1)
             data = conn.recv(1024).decode('utf-8')
             if not data: break
-            print(f"\r\033[KDevice 2: {data}\nYou (Device 1): ", end='', flush=True)
+            sys.stdout.write(f"\r\033[KDevice 2: {data}\nYou (Device 1): ")
+            sys.stdout.flush()
+        except socket.timeout:
+            continue
         except:
             break
 
@@ -42,13 +39,17 @@ def start_server():
     threading.Thread(target=receive_messages, args=(conn,), daemon=True).start()
     
     current_input = ""
+    print("You (Device 1): ", end='', flush=True)
+    
     while True:
-        char = get_char()
-        if char == '\r' or char == '\n':  # Enter pressed
-            print(f"\nYou (Device 1): {current_input}")
-            conn.sendall(current_input.encode('utf-8'))
+        char = get_char_windows()
+        if char == '\r':  # Enter on Windows
+            if current_input.strip():
+                print(f"\n{current_input}")
+                conn.sendall(current_input.encode('utf-8'))
             current_input = ""
-        elif char == '\x7f':  # Backspace
+            print("You (Device 1): ", end='', flush=True)
+        elif char == '\x08':  # Backspace
             if current_input:
                 current_input = current_input[:-1]
                 sys.stdout.write('\b \b')
@@ -57,41 +58,37 @@ def start_server():
             current_input += char
             sys.stdout.write(char)
             sys.stdout.flush()
+        time.sleep(0.01)  # Prevent CPU hogging
 
 if __name__ == "__main__":
     start_server()
 
+
 import socket
 import threading
 import sys
-import termios
-import tty
-import select
+import msvcrt
+import time
 
-SERVER_IP = '127.0.0.1'  # Change to Device 1's IP
+SERVER_IP = '127.0.0.1'  # Change to actual server IP
 PORT = 65432
 
-def get_char():
-    """Non-blocking single character input"""
-    fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
-    try:
-        tty.setraw(fd)
-        if select.select([sys.stdin], [], [], 0.1)[0]:
-            return sys.stdin.read(1)
-    finally:
-        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+def get_char_windows():
+    """Windows-compatible non-blocking input"""
+    if msvcrt.kbhit():
+        return msvcrt.getch().decode('utf-8', errors='ignore')
     return None
 
 def receive_messages(client_socket):
     while True:
         try:
+            client_socket.settimeout(0.1)
             data = client_socket.recv(1024).decode('utf-8')
-            if not data: 
-                break
-            # Clear line, show message, redraw prompt
+            if not data: break
             sys.stdout.write(f"\r\033[KDevice 1: {data}\nYou (Device 2): ")
             sys.stdout.flush()
+        except socket.timeout:
+            continue
         except:
             break
 
@@ -101,22 +98,20 @@ def start_client():
         client.connect((SERVER_IP, PORT))
         print(f"Connected to {SERVER_IP}\n")
 
-        # Start receiving messages in background thread
         threading.Thread(target=receive_messages, args=(client,), daemon=True).start()
 
-        # Main input loop
         current_input = ""
         print("You (Device 2): ", end='', flush=True)
         
         while True:
-            char = get_char()
-            if char == '\r' or char == '\n':  # Enter pressed
-                if current_input.strip():  # Only send non-empty messages
+            char = get_char_windows()
+            if char == '\r':  # Enter on Windows
+                if current_input.strip():
                     print(f"\n{current_input}")
                     client.sendall(current_input.encode('utf-8'))
-                    current_input = ""
+                current_input = ""
                 print("You (Device 2): ", end='', flush=True)
-            elif char == '\x7f':  # Backspace
+            elif char == '\x08':  # Backspace
                 if current_input:
                     current_input = current_input[:-1]
                     sys.stdout.write('\b \b')
@@ -125,6 +120,7 @@ def start_client():
                 current_input += char
                 sys.stdout.write(char)
                 sys.stdout.flush()
+            time.sleep(0.01)
                 
     except Exception as e:
         print(f"Error: {e}")
@@ -133,3 +129,4 @@ def start_client():
 
 if __name__ == "__main__":
     start_client()
+
