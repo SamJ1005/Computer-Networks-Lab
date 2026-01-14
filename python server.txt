@@ -1,48 +1,62 @@
 import socket
 import threading
 import sys
+import termios
+import tty
+import select
 
 HOST = '0.0.0.0'
 PORT = 65432
 
-# We use this to keep track of what the user is currently typing
-current_input = ""
+def get_char():
+    """Non-blocking single character input"""
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(fd)
+        if select.select([sys.stdin], [], [], 0.1)[0]:
+            return sys.stdin.read(1)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    return None
 
 def receive_messages(conn):
     while True:
         try:
             data = conn.recv(1024).decode('utf-8')
             if not data: break
-            
-            # 1. Clear the line you are typing on
-            # 2. Print the incoming message
-            # 3. Put back "You (Device 1): " AND whatever characters you already typed
-            sys.stdout.write(f"\r\033[KDevice 2: {data}\n")
-            sys.stdout.write(f"You (Device 1): {current_input}")
-            sys.stdout.flush()
+            print(f"\r\033[KDevice 2: {data}\nYou (Device 1): ", end='', flush=True)
         except:
             break
 
 def start_server():
-    global current_input
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind((HOST, PORT))
     server.listen(1)
     print(f"Server waiting on {PORT}...")
-
+    
     conn, addr = server.accept()
-    print(f"Connected to {addr}")
-
+    print(f"Connected to {addr}\n")
+    
     threading.Thread(target=receive_messages, args=(conn,), daemon=True).start()
-
+    
+    current_input = ""
     while True:
-        # Instead of a simple input(), we build the string or use the prompt
-        msg = input(f"You (Device 1): ")
-        # While typing, current_input isn't updated in real-time with standard input()
-        # but once you hit Enter, we send it.
-        conn.sendall(msg.encode('utf-8'))
-        current_input = "" # Reset after sending
+        char = get_char()
+        if char == '\r' or char == '\n':  # Enter pressed
+            print(f"\nYou (Device 1): {current_input}")
+            conn.sendall(current_input.encode('utf-8'))
+            current_input = ""
+        elif char == '\x7f':  # Backspace
+            if current_input:
+                current_input = current_input[:-1]
+                sys.stdout.write('\b \b')
+                sys.stdout.flush()
+        elif char:
+            current_input += char
+            sys.stdout.write(char)
+            sys.stdout.flush()
 
 if __name__ == "__main__":
     start_server()
@@ -50,38 +64,68 @@ if __name__ == "__main__":
 import socket
 import threading
 import sys
+import termios
+import tty
+import select
 
-SERVER_IP = '127.0.0.1' # Change to Device 1's IP
+SERVER_IP = '127.0.0.1'  # Change to Device 1's IP
 PORT = 65432
-current_input = ""
+
+def get_char():
+    """Non-blocking single character input"""
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(fd)
+        if select.select([sys.stdin], [], [], 0.1)[0]:
+            return sys.stdin.read(1)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    return None
 
 def receive_messages(client_socket):
     while True:
         try:
             data = client_socket.recv(1024).decode('utf-8')
-            if not data: break
-            
-            # This logic ensures the incoming message "pushes" your typing down 
-            # without deleting it.
-            sys.stdout.write(f"\r\033[KDevice 1: {data}\n")
-            sys.stdout.write(f"You (Device 2): {current_input}")
+            if not data: 
+                break
+            # Clear line, show message, redraw prompt
+            sys.stdout.write(f"\r\033[KDevice 1: {data}\nYou (Device 2): ")
             sys.stdout.flush()
         except:
             break
 
 def start_client():
-    global current_input
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         client.connect((SERVER_IP, PORT))
-        print(f"Connected to {SERVER_IP}")
+        print(f"Connected to {SERVER_IP}\n")
 
+        # Start receiving messages in background thread
         threading.Thread(target=receive_messages, args=(client,), daemon=True).start()
 
+        # Main input loop
+        current_input = ""
+        print("You (Device 2): ", end='', flush=True)
+        
         while True:
-            msg = input(f"You (Device 2): ")
-            client.sendall(msg.encode('utf-8'))
-            current_input = "" 
+            char = get_char()
+            if char == '\r' or char == '\n':  # Enter pressed
+                if current_input.strip():  # Only send non-empty messages
+                    print(f"\n{current_input}")
+                    client.sendall(current_input.encode('utf-8'))
+                    current_input = ""
+                print("You (Device 2): ", end='', flush=True)
+            elif char == '\x7f':  # Backspace
+                if current_input:
+                    current_input = current_input[:-1]
+                    sys.stdout.write('\b \b')
+                    sys.stdout.flush()
+            elif char:
+                current_input += char
+                sys.stdout.write(char)
+                sys.stdout.flush()
+                
     except Exception as e:
         print(f"Error: {e}")
     finally:
