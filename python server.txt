@@ -1,8 +1,9 @@
 import socket
 import threading
+import sys
 
 # Configuration
-HOST = '0.0.0.0' # Listen on all available interfaces
+HOST = '0.0.0.0'
 PORT = 65432
 
 def receive_messages(conn):
@@ -11,13 +12,20 @@ def receive_messages(conn):
             data = conn.recv(1024).decode('utf-8')
             if not data:
                 break
-            print(f"\nDevice 2: {data}")
-            print("You (Device 1): ", end="")
+            
+            # \r moves cursor to start, \033[K clears the line
+            # This 'lifts' the incoming message above what you are currently typing
+            sys.stdout.write(f"\r\033[KDevice 2: {data}\nYou (Device 1): ")
+            sys.stdout.flush()
         except:
             break
+    print("\nDevice 2 disconnected.")
+    sys.exit()
 
 def start_server():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # Allows restarting the script immediately without "Address in use" errors
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind((HOST, PORT))
     server.listen(1)
     print(f"Server started. Waiting for Device 2 on port {PORT}...")
@@ -25,36 +33,47 @@ def start_server():
     conn, addr = server.accept()
     print(f"Connected to {addr}")
 
-    # Start thread to listen for Device 2
+    # Listener thread
     threading.Thread(target=receive_messages, args=(conn,), daemon=True).start()
 
-    # Main loop to send messages to Device 2
-    while True:
-        msg = input("You (Device 1): ")
-        conn.sendall(msg.encode('utf-8'))
+    # Sender loop
+    try:
+        while True:
+            msg = input("You (Device 1): ")
+            if msg.lower() == 'exit':
+                break
+            conn.sendall(msg.encode('utf-8'))
+    except KeyboardInterrupt:
+        pass
+    finally:
+        conn.close()
+        server.close()
 
 if __name__ == "__main__":
     start_server()
 
 import socket
 import threading
+import sys
 
 # Configuration
-SERVER_IP = '127.0.0.1' # Change this to Device 1's actual IP address
+SERVER_IP = '127.0.0.1' 
 PORT = 65432
 
-def receive_messages(client):
+def receive_messages(client_socket):
     while True:
         try:
-            data = client.recv(1024).decode('utf-8')
+            data = client_socket.recv(1024).decode('utf-8')
             if not data:
-                print("\nConnection closed by server.")
                 break
-            # Clear the current input line and show the received message
-            print(f"\nDevice 1: {data}")
-            print("You (Device 2): ", end="", flush=True)
+            
+            # Clears the prompt line, prints message, then restores the prompt
+            sys.stdout.write(f"\r\033[KDevice 1: {data}\nYou (Device 2): ")
+            sys.stdout.flush()
         except:
             break
+    print("\nLost connection to server.")
+    sys.exit()
 
 def start_client():
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -62,19 +81,15 @@ def start_client():
         client.connect((SERVER_IP, PORT))
         print(f"Connected to Device 1 at {SERVER_IP}")
 
-        # Start thread to listen for Device 1
-        # We pass 'client' as the argument here
         threading.Thread(target=receive_messages, args=(client,), daemon=True).start()
 
-        # Main loop to send messages
         while True:
             msg = input("You (Device 2): ")
             if msg.lower() == 'exit':
                 break
-            client.sendall(msg.encode('utf-8')) # Use 'client' consistently
-
+            client.sendall(msg.encode('utf-8'))
     except Exception as e:
-        print(f"\nConnection error: {e}")
+        print(f"Error: {e}")
     finally:
         client.close()
 
