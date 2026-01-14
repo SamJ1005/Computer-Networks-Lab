@@ -2,52 +2,47 @@ import socket
 import threading
 import sys
 
-# Configuration
 HOST = '0.0.0.0'
 PORT = 65432
+
+# We use this to keep track of what the user is currently typing
+current_input = ""
 
 def receive_messages(conn):
     while True:
         try:
             data = conn.recv(1024).decode('utf-8')
-            if not data:
-                break
+            if not data: break
             
-            # \r moves cursor to start, \033[K clears the line
-            # This 'lifts' the incoming message above what you are currently typing
-            sys.stdout.write(f"\r\033[KDevice 2: {data}\nYou (Device 1): ")
+            # 1. Clear the line you are typing on
+            # 2. Print the incoming message
+            # 3. Put back "You (Device 1): " AND whatever characters you already typed
+            sys.stdout.write(f"\r\033[KDevice 2: {data}\n")
+            sys.stdout.write(f"You (Device 1): {current_input}")
             sys.stdout.flush()
         except:
             break
-    print("\nDevice 2 disconnected.")
-    sys.exit()
 
 def start_server():
+    global current_input
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # Allows restarting the script immediately without "Address in use" errors
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind((HOST, PORT))
     server.listen(1)
-    print(f"Server started. Waiting for Device 2 on port {PORT}...")
+    print(f"Server waiting on {PORT}...")
 
     conn, addr = server.accept()
     print(f"Connected to {addr}")
 
-    # Listener thread
     threading.Thread(target=receive_messages, args=(conn,), daemon=True).start()
 
-    # Sender loop
-    try:
-        while True:
-            msg = input("You (Device 1): ")
-            if msg.lower() == 'exit':
-                break
-            conn.sendall(msg.encode('utf-8'))
-    except KeyboardInterrupt:
-        pass
-    finally:
-        conn.close()
-        server.close()
+    while True:
+        # Instead of a simple input(), we build the string or use the prompt
+        msg = input(f"You (Device 1): ")
+        # While typing, current_input isn't updated in real-time with standard input()
+        # but once you hit Enter, we send it.
+        conn.sendall(msg.encode('utf-8'))
+        current_input = "" # Reset after sending
 
 if __name__ == "__main__":
     start_server()
@@ -56,38 +51,37 @@ import socket
 import threading
 import sys
 
-# Configuration
-SERVER_IP = '127.0.0.1' 
+SERVER_IP = '127.0.0.1' # Change to Device 1's IP
 PORT = 65432
+current_input = ""
 
 def receive_messages(client_socket):
     while True:
         try:
             data = client_socket.recv(1024).decode('utf-8')
-            if not data:
-                break
+            if not data: break
             
-            # Clears the prompt line, prints message, then restores the prompt
-            sys.stdout.write(f"\r\033[KDevice 1: {data}\nYou (Device 2): ")
+            # This logic ensures the incoming message "pushes" your typing down 
+            # without deleting it.
+            sys.stdout.write(f"\r\033[KDevice 1: {data}\n")
+            sys.stdout.write(f"You (Device 2): {current_input}")
             sys.stdout.flush()
         except:
             break
-    print("\nLost connection to server.")
-    sys.exit()
 
 def start_client():
+    global current_input
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         client.connect((SERVER_IP, PORT))
-        print(f"Connected to Device 1 at {SERVER_IP}")
+        print(f"Connected to {SERVER_IP}")
 
         threading.Thread(target=receive_messages, args=(client,), daemon=True).start()
 
         while True:
-            msg = input("You (Device 2): ")
-            if msg.lower() == 'exit':
-                break
+            msg = input(f"You (Device 2): ")
             client.sendall(msg.encode('utf-8'))
+            current_input = "" 
     except Exception as e:
         print(f"Error: {e}")
     finally:
