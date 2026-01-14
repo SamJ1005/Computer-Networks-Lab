@@ -4,41 +4,31 @@ import sys
 
 HOST = '0.0.0.0'
 PORT = 65432
-clients = []
 
-def broadcast(message, sender):
-    """Send message to all clients except sender"""
-    for client in clients[:]:
-        try:
-            client.send(message.encode('utf-8'))
-        except:
-            clients.remove(client)
-            client.close()
-
-def handle_client(client, addr):
-    print(f"\n✅ Device 2 ({addr}) joined chat!")
-    clients.append(client)
+def handle_client(client_socket, addr):
+    print(f"\n✅ Device 2 ({addr}) joined!")
     
     while True:
         try:
-            message = client.recv(1024).decode('utf-8')
+            message = client_socket.recv(1024).decode('utf-8')
             if not message: break
+            
+            # CRITICAL: Print WITHOUT disrupting input line
             print(f"\n👤 Device 2: {message}")
+            print("💬 You (Device 1): ", end='', flush=True)
+            
         except:
             break
     
-    clients.remove(client)
-    client.close()
-    print("\n📴 Device 2 left chat")
+    client_socket.close()
+    print("\n📴 Device 2 disconnected")
 
-def send_messages(client):
-    """Device 1 sends messages"""
+def send_messages(client_socket):
     while True:
         try:
-            message = input("\n💬 You (Device 1): ")
-            if message.lower() == 'quit':
-                break
-            broadcast(f"Device 1: {message}", client)
+            message = input("💬 You (Device 1): ")
+            if message.lower() == 'quit': break
+            client_socket.send(message.encode('utf-8'))
         except:
             break
 
@@ -46,64 +36,63 @@ def send_messages(client):
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server.bind((HOST, PORT))
-server.listen(1)
+server.listen()
 
-print("🚀 Server ready on port 65432...")
+print("🚀 Server on port 65432...")
 print("⏳ Waiting for Device 2...")
 
-client, addr = server.accept()
-print("\n🎉 Connection established!")
+client_socket, addr = server.accept()
+print("\n🎉 Connected!")
 
-# Start client handler & Device 1 input
-threading.Thread(target=handle_client, args=(client, addr), daemon=True).start()
+# Start threads
+threading.Thread(target=handle_client, args=(client_socket, addr), daemon=True).start()
+threading.Thread(target=send_messages, args=(client_socket,), daemon=True).start()
+
+input("💬 You (Device 1): ")  # Initial prompt
+
+import socket
+import threading
+import sys
+
+SERVER_IP = '127.0.0.1'  # Your server IP
+PORT = 65432
+
+def receive_messages(client_socket):
+    print("\n✅ Connected!")
+    
+    while True:
+        try:
+            message = client_socket.recv(1024).decode('utf-8')
+            if not message: break
+            
+            # CRITICAL: Print WITHOUT disrupting input line
+            print(f"\n👤 Device 1: {message}")
+            print("💬 You (Device 2): ", end='', flush=True)
+            
+        except:
+            break
+    
+    client_socket.close()
+
+def send_messages(client_socket):
+    while True:
+        try:
+            message = input("💬 You (Device 2): ")
+            if message.lower() == 'quit': break
+            client_socket.send(message.encode('utf-8'))
+        except:
+            break
+
+# Connect
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client.connect((SERVER_IP, PORT))
+
+# Start threads
+threading.Thread(target=receive_messages, args=(client,), daemon=True).start()
 threading.Thread(target=send_messages, args=(client,), daemon=True).start()
 
 try:
     while True:
         pass
 except KeyboardInterrupt:
-    print("\n👋 Server shutdown")
-    server.close()
-
-
-import socket
-import threading
-
-SERVER_IP = '127.0.0.1'  # Change to server IP
-PORT = 65432
-
-def receive_messages(client):
-    print("\n✅ Connected to chat!")
-    while True:
-        try:
-            message = client.recv(1024).decode('utf-8')
-            if not message: break
-            print(f"\n👤 {message}")
-        except:
-            break
-
-def send_messages(client):
-    while True:
-        try:
-            message = input("\n💬 You (Device 2): ")
-            if message.lower() == 'quit':
-                break
-            client.send(message.encode('utf-8'))
-        except:
-            break
-
-# Connect
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-try:
-    client.connect((SERVER_IP, PORT))
-    
-    # Separate threads for receive/send - NO CONFLICTS
-    threading.Thread(target=receive_messages, args=(client,), daemon=True).start()
-    threading.Thread(target=send_messages, args=(client,), daemon=True).start()
-    
-    while True:
-        pass
-except KeyboardInterrupt:
-    print("\n👋 Disconnected")
-finally:
-    client.close()
+    print("\n👋 Bye!")
