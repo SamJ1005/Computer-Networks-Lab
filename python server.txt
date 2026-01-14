@@ -1,0 +1,76 @@
+import socket
+import threading
+
+# Configuration
+HOST = '0.0.0.0' # Listen on all available interfaces
+PORT = 65432
+
+def receive_messages(conn):
+    while True:
+        try:
+            data = conn.recv(1024).decode('utf-8')
+            if not data:
+                break
+            print(f"\nDevice 2: {data}")
+            print("You (Device 1): ", end="")
+        except:
+            break
+
+def start_server():
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((HOST, PORT))
+    server.listen(1)
+    print(f"Server started. Waiting for Device 2 on port {PORT}...")
+
+    conn, addr = server.accept()
+    print(f"Connected to {addr}")
+
+    # Start thread to listen for Device 2
+    threading.Thread(target=receive_messages, args=(conn,), daemon=True).start()
+
+    # Main loop to send messages to Device 2
+    while True:
+        msg = input("You (Device 1): ")
+        conn.sendall(msg.encode('utf-8'))
+
+if __name__ == "__main__":
+    start_server()
+
+import socket
+import threading
+
+# Configuration
+SERVER_IP = '127.0.0.1' # Change this to Device 1's actual IP address
+PORT = 65432
+
+def receive_messages(client_socket):
+    while True:
+        try:
+            data = client_socket.recv(1024).decode('utf-8')
+            if not data:
+                break
+            print(f"\nDevice 1: {data}")
+            print("You (Device 2): ", end="")
+        except:
+            break
+
+def start_client():
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        client.connect((SERVER_IP, PORT))
+        print(f"Connected to Device 1 at {SERVER_IP}")
+
+        # Start thread to listen for Device 1
+        threading.Thread(target=receive_messages, args=(client,), daemon=True).start()
+
+        # Main loop to send messages to Device 1
+        while True:
+            msg = input("You (Device 2): ")
+            client_socket.sendall(msg.encode('utf-8'))
+    except Exception as e:
+        print(f"Connection failed: {e}")
+    finally:
+        client.close()
+
+if __name__ == "__main__":
+    start_client()
