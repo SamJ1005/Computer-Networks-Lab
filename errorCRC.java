@@ -8,7 +8,7 @@ public class errorCRC {
         return result.toString();
     }
 
-    static String crcCCITT(String data, String key) {
+    static String CIT(String data, String key) {
         int keyLen = key.length();
         if (data.length() < keyLen)
             return "ERROR: INPUT_TOO_SHORT";
@@ -32,7 +32,7 @@ public class errorCRC {
         System.out.print("Enter Sender Data Bits: ");
         String data = sc.nextLine();
         String appendedData = data + "0".repeat(16);
-        String crc = crcCCITT(appendedData, key);
+        String crc = CIT(appendedData, key);
         String transmitted = data + crc;
         System.out.println("\n--- SENDER SIDE ---");
         System.out.println("Data: " + data);

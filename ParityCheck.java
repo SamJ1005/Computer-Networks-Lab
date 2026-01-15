@@ -10,7 +10,7 @@ public class ParityCheck {
         System.out.println();
     }
 
-    static int[][] generateParity(int[][] data, int rows, int cols) {
+    static int[][] parTable(int[][] data, int rows, int cols) {
         int[][] parity = new int[rows + 1][cols + 1];
         for (int i = 0; i < rows; i++) {
             System.arraycopy(data[i], 0, parity[i], 0, cols);
@@ -43,25 +43,25 @@ public class ParityCheck {
         System.out.print("Enter number of columns: ");
         int cols = sc.nextInt();
 
-        int[][] senderData = readBits(sc, rows, cols, "Sender");
-        int[][] senderParity = generateParity(senderData, rows, cols);
+        int[][] sData = readBits(sc, rows, cols, "Sender");
+        int[][] sendPar = parTable(sData, rows, cols);
         System.out.println("SENDER SIDE 2D PARITY TABLE:");
-        printMatrix(senderParity, rows, cols);
+        printMatrix(sendPar, rows, cols);
 
-        int[][] receiverData = readBits(sc, rows, cols, "Receiver");
-        int[][] receiverParity = generateParity(receiverData, rows, cols);
+        int[][] rData = readBits(sc, rows, cols, "Receiver");
+        int[][] recPar = parTable(rData, rows, cols);
         System.out.println("RECEIVER SIDE 2D PARITY TABLE:");
-        printMatrix(receiverParity, rows, cols);
+        printMatrix(recPar, rows, cols);
 
         int errorRow = -1, errorCol = -1;
         for (int i = 0; i < rows; i++) {
-            if (senderParity[i][cols] != receiverParity[i][cols]) {
+            if (sendPar[i][cols] != recPar[i][cols]) {
                 errorRow = i + 1;
                 break;
             }
         }
         for (int j = 0; j < cols; j++) {
-            if (senderParity[rows][j] != receiverParity[rows][j]) {
+            if (sendPar[rows][j] != recPar[rows][j]) {
                 errorCol = j + 1;
                 break;
             }
