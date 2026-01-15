@@ -1,116 +1,82 @@
 import java.util.Scanner;
 
 public class ParityCheck {
-
-    static void printMatrix(int[][] m, int r, int c) {
-
-        for (int i = 0; i < r; i++) {
-            for (int j = 0; j < c; j++)
-                System.out.print(m[i][j] + " ");
-            System.out.println("| " + m[i][c]);
+    static void printMatrix(int[][] matrix, int rows, int cols) {
+        for (int i = 0; i <= rows; i++) {
+            for (int j = 0; j <= cols; j++)
+                System.out.print(matrix[i][j] + " ");
+            System.out.println();
         }
-
-        for (int i = 0; i < (2 * c) - 1; i++) System.out.print("-");
-        System.out.println();
-
-        for (int j = 0; j < c; j++) System.out.print(m[r][j] + " ");
         System.out.println();
     }
 
-    // ---------- Generate Parity Matrix ----------
-    static int[][] generateParity(int[][] data, int r, int c) {
-        int[][] m = new int[r + 1][c + 1];
-
-        for (int i = 0; i < r; i++)
-            for (int j = 0; j < c; j++)
-                m[i][j] = data[i][j];
-
-        // row parity
-        for (int i = 0; i < r; i++) {
-            int xor = 0;
-            for (int j = 0; j < c; j++) xor ^= m[i][j];
-            m[i][c] = xor;
+    static int[][] generateParity(int[][] data, int rows, int cols) {
+        int[][] parity = new int[rows + 1][cols + 1];
+        for (int i = 0; i < rows; i++) {
+            System.arraycopy(data[i], 0, parity[i], 0, cols);
+            for (int j = 0; j < cols; j++)
+                parity[i][cols] ^= parity[i][j];
         }
-
-        // column parity
-        for (int j = 0; j < c; j++) {
-            int xor = 0;
-            for (int i = 0; i < r; i++) xor ^= m[i][j];
-            m[r][j] = xor;
-        }
-
-        // overall parity
-        m[r][c] = 0;
-
-        return m;
+        for (int j = 0; j < cols; j++)
+            for (int i = 0; i < rows; i++)
+                parity[rows][j] ^= parity[i][j];
+        return parity;
     }
 
-    static void readBits(Scanner sc, int[][] arr, int r, int c, String who) {
-
-        System.out.println("\n" + who + ": Enter bits (0 or 1)");
-
-        for (int i = 0; i < r; i++)
-            for (int j = 0; j < c; j++) {
-                System.out.print(who + " [" + (i+1) + "][" + (j+1) + "]: ");
-                int bit = sc.nextInt();
-                while (bit != 0 && bit != 1) {
+    static int[][] readBits(Scanner sc, int rows, int cols, String label) {
+        int[][] bits = new int[rows][cols];
+        System.out.println("\n" + label + ": Enter bits (0 or 1)");
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                System.out.print(label + " [" + (i + 1) + "][" + (j + 1) + "]: ");
+                while ((bits[i][j] = sc.nextInt()) != 0 && bits[i][j] != 1)
                     System.out.print("Invalid! Enter 0 or 1: ");
-                    bit = sc.nextInt();
-                }
-                arr[i][j] = bit;
             }
+        }
+        return bits;
     }
 
     public static void main(String[] args) {
-
         Scanner sc = new Scanner(System.in);
-
         System.out.print("Enter number of rows: ");
-        int r = sc.nextInt();
-
+        int rows = sc.nextInt();
         System.out.print("Enter number of columns: ");
-        int c = sc.nextInt();
+        int cols = sc.nextInt();
 
-        int[][] sender = new int[r][c];
-        int[][] receiver = new int[r][c];
+        int[][] senderData = readBits(sc, rows, cols, "Sender");
+        int[][] senderParity = generateParity(senderData, rows, cols);
+        System.out.println("SENDER SIDE 2D PARITY TABLE:");
+        printMatrix(senderParity, rows, cols);
 
-        readBits(sc, sender, r, c, "Sender");
-        int[][] senderP = generateParity(sender, r, c);
-
-        System.out.println("\nSENDER SIDE 2D PARITY TABLE:");
-        printMatrix(senderP, r, c);
-
-        readBits(sc, receiver, r, c, "Receiver");
-        int[][] receiverP = generateParity(receiver, r, c);
-
-        System.out.println("\nRECEIVER SIDE 2D PARITY TABLE:");
-        printMatrix(receiverP, r, c);
-
-        System.out.println("\nChecking errors...");
+        int[][] receiverData = readBits(sc, rows, cols, "Receiver");
+        int[][] receiverParity = generateParity(receiverData, rows, cols);
+        System.out.println("RECEIVER SIDE 2D PARITY TABLE:");
+        printMatrix(receiverParity, rows, cols);
 
         int errorRow = -1, errorCol = -1;
-
-        // Check row parity
-        for (int i = 0; i < r; i++) {
-            if (senderP[i][c] != receiverP[i][c]) {
+        for (int i = 0; i < rows; i++) {
+            if (senderParity[i][cols] != receiverParity[i][cols]) {
                 errorRow = i + 1;
+                break;
             }
         }
-
-        // Check column parity
-        for (int j = 0; j < c; j++) {
-            if (senderP[r][j] != receiverP[r][j]) {
+        for (int j = 0; j < cols; j++) {
+            if (senderParity[rows][j] != receiverParity[rows][j]) {
                 errorCol = j + 1;
+                break;
             }
         }
 
-        if (errorRow == -1 && errorCol == -1) {
-            System.out.println("\nNO ERROR — Transmission Successful!");
+        System.out.println("Checking errors...");
+        if (errorRow == -1 && errorCol == -1)
+            System.out.println("\nNO ERROR. Transmission Successful!");
+        else if (errorRow != -1 && errorCol != -1) {
+            System.out.println("\nSingle-bit error at position: [" + errorRow + "][" + errorCol + "]");
+            System.out.println("Error while transmission. Data Corrupted!");
         } else {
-            System.out.println("\nSingle-bit error detected at position: [" + errorRow + "][" + errorCol + "]");
-            System.out.println(" Error while transmission. Data Corrupted!");
+            System.out.println("\nMultiple-bit error detected!");
+            System.out.println("Error while transmission. Data Corrupted!");
         }
-
         sc.close();
     }
 }
