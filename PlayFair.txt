@@ -1,0 +1,98 @@
+
+import java.util.*;
+
+public class PlayFair {
+
+    static char[][] m = new char[5][5];
+
+    static void k(String key) {
+        String s = key.toUpperCase().replace("J", "I").replaceAll("[^A-Z]", "");
+        boolean[] u = new boolean[26];
+        int r = 0, c = 0;
+        for (char ch : s.toCharArray()) {
+            int i = ch - 'A';
+            if (!u[i]) {
+                u[i] = true;
+                m[r][c++] = ch;
+                if (c == 5) {
+                    c = 0;
+                    r++;
+                }
+            }
+        }
+        for (char ch = 'A'; ch <= 'Z'; ch++) {
+            if (ch == 'J') {
+                continue;
+
+            }
+            int i = ch - 'A';
+            if (!u[i]) {
+                u[i] = true;
+                m[r][c++] = ch;
+                if (c == 5) {
+                    c = 0;
+                    r++;
+                }
+            }
+        }
+    }
+
+    static String p(String t) {
+        t = t.toUpperCase().replace("J", "I").replaceAll("[^A-Z]", "");
+        StringBuilder b = new StringBuilder();
+        for (int i = 0; i < t.length(); i++) {
+            b.append(t.charAt(i));
+            if (i + 1 < t.length() && t.charAt(i) == t.charAt(i + 1)) {
+                b.append('X');
+
+            }
+        }
+        return b.length() % 2 == 1 ? b.append('X').toString() : b.toString();
+    }
+
+    static int[] f(char ch) {
+        for (int i = 0; i < 5; i++) {
+            for (int j = 0; j < 5; j++) {
+                if (m[i][j] == ch) {
+                    return new int[]{i, j};
+
+                }
+            }
+        }
+        return null;
+    }
+
+    static String e(String t) {
+        t = p(t);
+        StringBuilder r = new StringBuilder();
+        for (int i = 0; i < t.length(); i += 2) {
+            int[] a = f(t.charAt(i)), b = f(t.charAt(i + 1));
+            if (a[0] == b[0]) {
+                r.append(m[a[0]][(a[1] + 1) % 5]).append(m[b[0]][(b[1] + 1) % 5]);
+            } else if (a[1] == b[1]) {
+                r.append(m[(a[0] + 1) % 5][a[1]]).append(m[(b[0] + 1) % 5][b[1]]);
+            } else {
+                r.append(m[a[0]][b[1]]).append(m[b[0]][a[1]]);
+            }
+        }
+        return r.toString();
+    }
+
+    public static void main(String[] a) {
+        Scanner s = new Scanner(System.in);
+        System.out.print("Key: ");
+        k(s.nextLine());
+        System.out.print("Text: ");
+        String c = e(s.nextLine());
+        System.out.println("\nMatrix:");
+        for (int i = 0; i < 5; i++) {
+            for (int j = 0; j < 5; j++) {
+                System.out.print(m[i][j] + " ");
+
+            }
+            System.out.println();
+        }
+        System.out.println("Cipher: " + c);
+        s.close();
+    }
+}
