@@ -1,6 +1,6 @@
 import java.util.*;
 
-public class PlayFair {
+public class PlayFairCipher {
     static char[][] m = new char[5][5];
 
     static void keyMatrix(String k){
