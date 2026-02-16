@@ -2,97 +2,86 @@ import socket
 import threading
 import sys
 
-HOST = '0.0.0.0'
-PORT = 65432
+KEY = "secretkey"
 
-def handle_client(client_socket, addr):
-    print(f"\n✅ Device 2 ({addr}) joined!")
-    
+def encrypt_decrypt(message, key):
+    encrypted = ""
+    for i in range(len(message)):
+        encrypted += chr(ord(message[i]) ^ ord(key[i % len(key)]))
+    return encrypted
+
+def receive_messages(conn):
     while True:
         try:
-            message = client_socket.recv(1024).decode('utf-8')
-            if not message: break
-            
-            # CRITICAL: Print WITHOUT disrupting input line
-            print(f"\n👤 Device 2: {message}")
-            print("💬 You (Device 1): ", end='', flush=True)
-            
-        except:
-            break
-    
-    client_socket.close()
-    print("\n📴 Device 2 disconnected")
+            data = conn.recv(1024).decode()
+            if not data:
+                break
+            decrypted = encrypt_decrypt(data, KEY)
 
-def send_messages(client_socket):
-    while True:
-        try:
-            message = input("💬 You (Device 1): ")
-            if message.lower() == 'quit': break
-            client_socket.send(message.encode('utf-8'))
+            print("\n\nClient:", decrypted)
+            print("You: ", end="", flush=True)
+
         except:
             break
 
-# Start server
+def send_messages(conn):
+    while True:
+        message = input("You: ")
+        encrypted = encrypt_decrypt(message, KEY)
+        conn.send(encrypted.encode())
+
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-server.bind((HOST, PORT))
-server.listen()
+server.bind(("0.0.0.0", 5000))
+server.listen(1)
 
-print("🚀 Server on port 65432...")
-print("⏳ Waiting for Device 2...")
+print("Server started. Waiting for connection...")
+conn, addr = server.accept()
+print("Connected to:", addr)
+print("You can start chatting.\n")
 
-client_socket, addr = server.accept()
-print("\n🎉 Connected!")
+threading.Thread(target=receive_messages, args=(conn,), daemon=True).start()
+send_messages(conn)
 
-# Start threads
-threading.Thread(target=handle_client, args=(client_socket, addr), daemon=True).start()
-threading.Thread(target=send_messages, args=(client_socket,), daemon=True).start()
-
-input("💬 You (Device 1): ")  # Initial prompt
 
 import socket
 import threading
 import sys
 
-SERVER_IP = '127.0.0.1'  # Your server IP
-PORT = 65432
+KEY = "secretkey"
 
-def receive_messages(client_socket):
-    print("\n✅ Connected!")
-    
+def encrypt_decrypt(message, key):
+    encrypted = ""
+    for i in range(len(message)):
+        encrypted += chr(ord(message[i]) ^ ord(key[i % len(key)]))
+    return encrypted
+
+def receive_messages(client):
     while True:
         try:
-            message = client_socket.recv(1024).decode('utf-8')
-            if not message: break
-            
-            # CRITICAL: Print WITHOUT disrupting input line
-            print(f"\n👤 Device 1: {message}")
-            print("💬 You (Device 2): ", end='', flush=True)
-            
-        except:
-            break
-    
-    client_socket.close()
+            data = client.recv(1024).decode()
+            if not data:
+                break
+            decrypted = encrypt_decrypt(data, KEY)
 
-def send_messages(client_socket):
-    while True:
-        try:
-            message = input("💬 You (Device 2): ")
-            if message.lower() == 'quit': break
-            client_socket.send(message.encode('utf-8'))
+            print("\n\nServer:", decrypted)
+            print("You: ", end="", flush=True)
+
         except:
             break
 
-# Connect
+def send_messages(client):
+    while True:
+        message = input("You: ")
+        encrypted = encrypt_decrypt(message, KEY)
+        client.send(encrypted.encode())
+
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect((SERVER_IP, PORT))
 
-# Start threads
+server_ip = input("Enter Server IP: ")
+client.connect((server_ip, 5000))
+
+print("Connected to server.")
+print("You can start chatting.\n")
+
 threading.Thread(target=receive_messages, args=(client,), daemon=True).start()
-threading.Thread(target=send_messages, args=(client,), daemon=True).start()
-
-try:
-    while True:
-        pass
-except KeyboardInterrupt:
-    print("\n👋 Bye!")
+send_messages(client)

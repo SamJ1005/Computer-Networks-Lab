@@ -2,6 +2,7 @@ import java.util.*;
 
 public class PlayFairCipher {
     static char[][] m = new char[5][5];
+
     static void keyMatrix(String k){
         boolean[] u = new boolean[26];
         k = (k+"ABCDEFGHIKLMNOPQRSTUVWXYZ").toUpperCase()
