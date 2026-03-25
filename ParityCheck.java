@@ -53,24 +53,22 @@ public class ParityCheck {
         System.out.println("RECEIVER SIDE 2D PARITY TABLE:");
         printMatrix(recPar, rows, cols);
 
-        int errorRow = -1, errorCol = -1;
+        int errorRow = 0, errorCol = 0;
         for (int i = 0; i < rows; i++) {
             if (sendPar[i][cols] != recPar[i][cols]) {
-                errorRow = i + 1;
-                break;
+                errorRow++;
             }
         }
         for (int j = 0; j < cols; j++) {
             if (sendPar[rows][j] != recPar[rows][j]) {
-                errorCol = j + 1;
-                break;
+                errorCol++;
             }
         }
 
         System.out.println("Checking errors...");
-        if (errorRow == -1 && errorCol == -1)
+        if (errorRow == 0 && errorCol == 0)
             System.out.println("\nNO ERROR. Transmission Successful!");
-        else if (errorRow != -1 && errorCol != -1) {
+        else if (errorRow == 1 && errorCol == 1) {
             System.out.println("\nSingle-bit error at position: [" + errorRow + "][" + errorCol + "]");
             System.out.println("Error while transmission. Data Corrupted!");
         } else {
