@@ -13,7 +13,6 @@ public class TISocket_Client {
         Scanner sc = new Scanner(System.in);
         System.out.print("Enter file name: ");
         String fileName = sc.nextLine();
-
         dos.writeUTF(fileName);
 
         try {

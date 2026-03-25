@@ -6,7 +6,6 @@ public class TISocket_Server {
 
         ServerSocket ss = new ServerSocket(5000);
         System.out.println("Server waiting...");
-
         Socket s = ss.accept();
         System.out.println("Client connected");
 
@@ -14,7 +13,6 @@ public class TISocket_Server {
         DataOutputStream dos = new DataOutputStream(s.getOutputStream());
 
         String fileName = dis.readUTF();
-
         File file = new File(fileName);
 
         if (file.exists()) {
