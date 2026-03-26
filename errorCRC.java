@@ -41,3 +41,57 @@ public class errorCRC {
         sc.close();
     }
 }
+
+// import java.util.Scanner;
+
+// public class testing {
+//     static String poly = "10001000000100001";
+
+//     public static void main(String[] args) {
+//         Scanner sc = new Scanner(System.in);
+
+//         // 1. Sender Side
+//         System.out.print("Enter binary data bits: ");
+//         String data = sc.nextLine();
+        
+//         // Append 16 zeros to the data (for 16-bit CRC)
+//         String code = data + "0000000000000000";
+//         String remainder = divide(code);
+        
+//         String transmittedData = data + remainder;
+//         System.out.println("Generated Checksum (Remainder): " + remainder);
+//         System.out.println("Data to be transmitted: " + transmittedData);
+
+//         // 2. Receiver Side (Error Detection)
+//         System.out.println("\n--- Receiver Side ---");
+//         System.out.print("Enter received data bits: ");
+//         String receivedData = sc.nextLine();
+
+//         String checkRemainder = divide(receivedData);
+        
+//         // If remainder is all zeros, there is no error
+//         if (Integer.parseInt(checkRemainder, 2) == 0) {
+//             System.out.println("No error detected. Data is valid.");
+//         } else {
+//             System.out.println("Error detected in transmission!");
+//         }
+//     }
+
+//     // Function to perform Modulo-2 Division (XOR)
+//     static String divide(String tempCode) {
+//         int n = poly.length();
+//         char[] codeArr = tempCode.toCharArray();
+//         char[] polyArr = poly.toCharArray();
+
+//         for (int i = 0; i <= tempCode.length() - n; i++) {
+//             // If the leftmost bit is 1, perform XOR with polynomial
+//             if (codeArr[i] == '1') {
+//                 for (int j = 0; j < n; j++) {
+//                     codeArr[i + j] = (codeArr[i + j] == polyArr[j]) ? '0' : '1';
+//                 }
+//             }
+//         }
+//         // Return the last 16 bits as the remainder
+//         return new String(codeArr).substring(tempCode.length() - (n - 1));
+//     }
+// }
